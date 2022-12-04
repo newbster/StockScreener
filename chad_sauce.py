@@ -5,11 +5,14 @@ from ta.momentum import StochasticOscillator
 from ta.trend import SMAIndicator
 import csv
 from time import sleep
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 def add_good_stocks():
     symbols = []
     print('Scanning stocks...')
-    with open('crypto_stocks.csv', newline='') as f:
+    with open('good_stocks.csv', newline='') as f:
         for row in csv.reader(f):
             symbols.append(row[0])
     return symbols[1:]
@@ -62,27 +65,42 @@ def analyze_stocks(df):
     
     return df
 
-def find_setup(df):
-    upward_bias = df["Close"] > df["5dma"]
-
-    return df
+def send_email(stocks_to_see, recipients):
+    for recipient_address in recipients:
+        mail_content = 'Stonks:\n\n'
+        for stock in stocks_to_see:
+            mail_content += stock + '\n'
+        #The mail addresses and password
+        sender_address = 'newbystockscreener@gmail.com'
+        sender_pass = 'deznmwxewjaslvcx'
+        #Setup the MIME
+        message = MIMEMultipart()
+        message['From'] = sender_address
+        message['To'] = recipient_address
+        message['Subject'] = 'Check These Stocks Out!'   #The subject line
+        #The body and the attachments for the mail
+        message.attach(MIMEText(mail_content, 'plain'))
+        #Create SMTP session for sending the mail
+        session = smtplib.SMTP('smtp.gmail.com', 587) #use gmail with port
+        session.starttls() #enable security
+        session.login(sender_address, sender_pass) #login with mail_id and password
+        text = message.as_string()
+        session.sendmail(sender_address, recipient_address, text)
+        session.quit()
 
 # This is where the program starts
 def main():
     stocks_to_see = []
     # Iterate through each stock from the stock screener, add indicators, and find good setups
     for index, symbol in enumerate(add_good_stocks()):
-        print(symbol)
         stock = yf.Ticker(symbol)
         df = stock.history(period="2mo")
         df = analyze_stocks(df)
-        print(df)
         if get_events(df) >= 3:
             stocks_to_see.append(symbol)
         if index % 50 == 0 and index != 0:
             sleep(10)
-        break
-    print(stocks_to_see)
+    send_email(stocks_to_see, ['jtnewby88@gmail.com'])
 
 if __name__ == "__main__":
     main()
