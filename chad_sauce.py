@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 def add_good_stocks():
     symbols = []
     print('Scanning stocks...')
-    with open('test_stocks.csv', newline='') as f:
+    with open('good_stocks.csv', newline='') as f:
         for row in csv.reader(f):
             symbols.append(row[0])
     return symbols[1:]
