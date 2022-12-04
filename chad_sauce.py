@@ -100,7 +100,7 @@ def main():
             stocks_to_see.append(symbol)
         if index % 50 == 0 and index != 0:
             sleep(10)
-    send_email(stocks_to_see, ['jtnewby88@gmail.com'])
+    send_email(stocks_to_see, ['jtnewby88@gmail.com', 'mccormickjosh90@gmail.com', 'delano.a.skipper@gmail.com'])
 
 if __name__ == "__main__":
     main()
