@@ -9,10 +9,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-def add_good_stocks():
+def add_good_stocks(csv_filename):
     symbols = []
     print('Scanning stocks...')
-    with open('good_stocks.csv', newline='') as f:
+    with open(csv_filename, newline='') as f:
         for row in csv.reader(f):
             symbols.append(row[0])
     return symbols[1:]
@@ -26,12 +26,14 @@ def add_stos(df):
     df['slow12'] = indicator_slow12.stoch()
     return df
 
-def add_ma(df, days):
+def add_mas(df):
     # Initialize Bollinger Bands Indicator
-    indicator_sma = SMAIndicator(close=df["Close"], window=days)
+    indicator_sma5 = SMAIndicator(close=df["Close"], window=5)
+    indicator_sma200 = SMAIndicator(close=df["Close"], window=200)
 
     # Add Bollinger Bands features
-    df['5dma'] = indicator_sma.sma_indicator()
+    df['5dma'] = indicator_sma5.sma_indicator()
+    df['200dma'] = indicator_sma200.sma_indicator()
 
     return df
 
@@ -46,24 +48,35 @@ def add_bb(df):
 
     return df
 
-def get_events(df):
-    count = 0
-    for index, row in df.iterrows():
-        if row['Low'] < row['bb_lower']:
-            count += 1
-        else:
-            count = 0
-    return count
-
 def analyze_stocks(df):
     # Add BB values to df
     df = add_bb(df)
     # Add sto's (12 and 6) to df
     df = add_stos(df)
     # Add 5-day ma
-    df = add_ma(df,5)
+    df = add_mas(df)
     
     return df
+
+def is_setup(df):
+    count = 0
+    row_count = 0
+    # Get number of times stock touches lower band. Goal is 3 or more.
+    for index, row in df.iterrows():
+        if row_count > len(df) - 10: # we only care about the last 10 days
+            if row['Low'] < row['bb_lower']:
+                count += 1
+            else:
+                count = 0
+        row_count += 1
+    
+    # Check for upward bias 
+    upward_bias = df["Close"].values[-1] > df["5dma"].values[-1]
+
+    # Check for upward momentum
+    upward_momentum = df["slow12"].values[-1] > df["slow12"].values[-2]
+    
+    return count >= 3 and upward_bias and upward_momentum
 
 def send_email(stocks_to_see, recipients):
     for recipient_address in recipients:
@@ -92,14 +105,17 @@ def send_email(stocks_to_see, recipients):
 def main():
     stocks_to_see = []
     # Iterate through each stock from the stock screener, add indicators, and find good setups
-    for index, symbol in enumerate(add_good_stocks()):
+    for index, symbol in enumerate(add_good_stocks('good_stocks.csv')):
         stock = yf.Ticker(symbol)
-        df = stock.history(period="2mo")
-        df = analyze_stocks(df)
-        if get_events(df) >= 3:
-            stocks_to_see.append(symbol)
-        if index % 50 == 0 and index != 0:
-            sleep(10)
+        try:
+            df = stock.history(period="1y")
+            df = analyze_stocks(df)
+            if is_setup(df):
+                stocks_to_see.append(symbol)
+            if index % 50 == 0 and index != 0:
+                sleep(10)
+        except:
+            print(f"Ticker {symbol} invalid, skipping.")
     send_email(stocks_to_see, ['jtnewby88@gmail.com', 'mccormickjosh90@gmail.com', 'delano.a.skipper@gmail.com'])
 
 if __name__ == "__main__":
