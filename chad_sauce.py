@@ -66,8 +66,6 @@ def is_setup(df):
         if row_count > len(df) - 10: # we only care about the last 10 days
             if row['Low'] < row['bb_lower']:
                 count += 1
-            else:
-                count = 0
         row_count += 1
     
     # Check for upward bias 
