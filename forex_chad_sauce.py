@@ -112,7 +112,7 @@ def main():
     for k,v in get_forex_tickers().items():
         stock = yf.Ticker(k)
         try:
-            df = stock.history(period="1y")
+            df = stock.history(period="1mo", interval='60m')
             df = analyze_stocks(df)
             if is_setup(df):
                 stocks_to_see.append(v)
