@@ -66,11 +66,10 @@ def is_setup(df):
     row_count = 0
     # Get number of times stock touches lower band. Goal is 3 or more.
     for i, row in df.iterrows():
+        
         if row_count > len(df) - 10: # we only care about the last 10 days
             if row['Low'] < row['bb_lower']:
                 count += 1
-            else:
-                count = 0
         row_count += 1
 
     # Check for upward bias 
@@ -110,13 +109,14 @@ def main():
     
     # Iterate through each stock from the stock screener, add indicators, and find good setups
     for k,v in get_forex_tickers().items():
+        print('\n')
+        print(k)
         stock = yf.Ticker(k)
         try:
             df = stock.history(period="1mo", interval='60m')
             df = analyze_stocks(df)
             if is_setup(df):
                 stocks_to_see.append(v)
-
         except:
             print(f"Ticker {k} invalid, skipping.")
 
