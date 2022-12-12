@@ -52,14 +52,13 @@ def analyze_stocks(df):
 
 def is_setup(df):
     count = 0
-    row_count = 0
+    df = df.iloc[-10:]
+    
     # Get number of times stock touches lower band. Goal is 3 or more.
     for index, row in df.iterrows():
-        if row_count > len(df) - 10: # we only care about the last 10 days
-            if row['Low'] < row['bb_lower']:
-                count += 1
-        row_count += 1
-    
+        if row['Low'] < row['bb_lower']:
+            count += 1
+            
     # Check for upward bias 
     upward_bias = df["Close"].values[-1] > df["5dma"].values[-1]
 
