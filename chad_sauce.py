@@ -9,14 +9,6 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-def add_good_stocks(csv_filename):
-    symbols = []
-    print('Scanning stocks...')
-    with open(csv_filename, newline='') as f:
-        for row in csv.reader(f):
-            symbols.append(row[0])
-    return symbols[1:]
-
 def add_stos(df):
     # Initialize Stochastic Indicator
     indicator_slow6 = StochasticOscillator(high=df["High"], low=df["Low"], close=df["Close"], window=6, smooth_window=1)
@@ -60,14 +52,13 @@ def analyze_stocks(df):
 
 def is_setup(df):
     count = 0
-    row_count = 0
+    df = df.iloc[-10:]
+    
     # Get number of times stock touches lower band. Goal is 3 or more.
     for index, row in df.iterrows():
-        if row_count > len(df) - 10: # we only care about the last 10 days
-            if row['Low'] < row['bb_lower']:
-                count += 1
-        row_count += 1
-    
+        if row['Low'] < row['bb_lower']:
+            count += 1
+            
     # Check for upward bias 
     upward_bias = df["Close"].values[-1] > df["5dma"].values[-1]
 
@@ -101,9 +92,10 @@ def send_email(stocks_to_see, recipients):
 
 # This is where the program starts
 def main():
-    stocks_to_see = []
+    stonks = pd.read_csv('good_stocks.csv')
+    stocks_to_see = stonks.Ticker.tolist()
     # Iterate through each stock from the stock screener, add indicators, and find good setups
-    for index, symbol in enumerate(add_good_stocks('good_stocks.csv')):
+    for index, symbol in enumerate(stocks_to_see):
         stock = yf.Ticker(symbol)
         try:
             df = stock.history(period="1y")
