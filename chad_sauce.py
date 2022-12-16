@@ -63,7 +63,7 @@ def is_setup(df):
     row_count = 0
     # Get number of times stock touches lower band. Goal is 3 or more.
     for index, row in df.iterrows():
-        if row_count > len(df) - 10: # we only care about the last 10 days
+        if row_count > len(df) - 5: # we only care about the last 10 days
             if row['Low'] < row['bb_lower']:
                 count += 1
         row_count += 1
